@@ -1,0 +1,12 @@
+bundle:
+  name: uc16_no_show_reducer
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://<your-databricks-workspace-host>

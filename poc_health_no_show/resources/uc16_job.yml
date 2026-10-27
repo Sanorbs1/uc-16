@@ -1,0 +1,75 @@
+resources:
+  jobs:
+    uc16_no_show_daily_pipeline:
+      name: uc16_no_show_daily_pipeline
+
+      tasks:
+        - task_key: ingest_bronze
+          notebook_task:
+            notebook_path: ../src/notebooks/01_bronze/ingest_appointments_bronze.py
+
+        - task_key: build_silver
+          depends_on:
+            - task_key: ingest_bronze
+          notebook_task:
+            notebook_path: ../src/notebooks/02_silver/build_appointments_clean.py
+
+        - task_key: build_history
+          depends_on:
+            - task_key: build_silver
+          notebook_task:
+            notebook_path: ../src/notebooks/02_silver/build_patient_history_features.py
+
+        - task_key: build_gold_risk
+          depends_on:
+            - task_key: build_history
+          notebook_task:
+            notebook_path: ../src/notebooks/03_gold/build_appointment_risk_segments.py
+
+        - task_key: build_outreach_priority_queue
+          depends_on:
+            - task_key: build_gold_risk
+          notebook_task:
+            notebook_path: ../src/notebooks/03_gold/05_build_outreach_priority_queue.py
+
+        - task_key: build_prompt_queue
+          depends_on:
+            - task_key: build_outreach_priority_queue
+          notebook_task:
+            notebook_path: ../src/notebooks/03_gold/create_outreach_prompt_queue.py
+
+        - task_key: generate_messages
+          depends_on:
+            - task_key: build_prompt_queue
+          notebook_task:
+            notebook_path: ../src/notebooks/03_gold/generate_outreach_messages.py
+
+        - task_key: validate_ai_messages
+          depends_on:
+            - task_key: generate_messages
+          notebook_task:
+            notebook_path: ../src/notebooks/04_testing/08_validate_ai_messages.py
+
+        - task_key: simulate_tracking
+          depends_on:
+            - task_key: validate_ai_messages
+          notebook_task:
+            notebook_path: ../src/notebooks/09_simulate_outreach_tracking.py
+
+        - task_key: build_risk_enriched
+          depends_on:
+            - task_key: build_gold_risk
+          notebook_task:
+            notebook_path: ../src/notebooks/10_build_risk_enriched.py
+
+        - task_key: build_monthly_trend
+          depends_on:
+            - task_key: build_gold_risk
+          notebook_task:
+            notebook_path: ../src/notebooks/11_build_monthly_no_show_trend.py
+
+        - task_key: run_quality_monitoring
+          depends_on:
+            - task_key: simulate_tracking
+          notebook_task:
+            notebook_path: ../src/notebooks/12_run_quality_monitoring.py
